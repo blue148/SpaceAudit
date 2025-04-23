@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      padding: 20px;
+    }
+    #results {
+      margin-top: 16px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .export-btn {
+      margin-top: 16px;
+      padding: 8px 16px;
+      background-color: #18A0FB;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>Spacing Token Audit</h2>
+  <div id="status">Analyzing spacing tokens...</div>
+  <div id="results"></div>
+  <button class="export-btn" id="export">Export CSV</button>
+
+  <script>
+    // Listen for messages from the plugin code
+    window.onmessage = (event) => {
+      const data = event.data.pluginMessage;
+      
+      if (data.type === 'results') {
+        document.getElementById('status').textContent = 'Analysis complete!';
+        displayResults(data.tokens);
+      }
+    };
+
+    function displayResults(tokenData) {
+      const resultsDiv = document.getElementById('results');
+      
+      // Create table
+      const table = document.createElement('table');
+      const headerRow = document.createElement('tr');
+      
+      // Add headers
+      ['Token Name', 'Value', 'Usage Count', '% of Total'].forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.appendChild(th);
+      });
+      
+      table.appendChild(headerRow);
+      
+      // Sort tokens by usage count (descending)
+      const sortedTokens = Object.entries(tokenData).sort((a, b) => b[1].count - a[1].count);
+      const totalUsage = sortedTokens.reduce((sum, [_, data]) => sum + data.count, 0);
+      
+      // Add rows
+      sortedTokens.forEach(([token, data]) => {
+        const row = document.createElement('tr');
+        
+        const nameCell = document.createElement('td');
+        nameCell.textContent = token;
+        row.appendChild(nameCell);
+        
+        const valueCell = document.createElement('td');
+        valueCell.textContent = data.value;
+        row.appendChild(valueCell);
+        
+        const countCell = document.createElement('td');
+        countCell.textContent = data.count;
+        row.appendChild(countCell);
+        
+        const percentCell = document.createElement('td');
+        percentCell.textContent = `${((data.count / totalUsage) * 100).toFixed(2)}%`;
+        row.appendChild(percentCell);
+        
+        table.appendChild(row);
+      });
+      
+      resultsDiv.appendChild(table);
+    }
+
+    // Export to CSV functionality
+    document.getElementById('export').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'export' } }, '*');
+    };
+  </script>
+</body>
+</html>
